@@ -1,57 +1,56 @@
 """
 Handwriting OCR Module
-Primary: TrOCR (Microsoft) - best for handwriting
-Fallback: EasyOCR
+Primary: EasyOCR with bounding-box line grouping — correctly separates each line
+Fallback: TrOCR on individual detected lines
 """
 
 import cv2
 import numpy as np
 from PIL import Image
-import re
 from pathlib import Path
 import warnings
 warnings.filterwarnings("ignore")
 
 
 class HandwritingOCR:
-    def __init__(self, use_trocr=True, use_easyocr_fallback=True):
+    def __init__(self, use_trocr=False, use_easyocr_fallback=True):
+        # EasyOCR is primary — it returns bounding boxes so we can group lines properly
         self.use_trocr = use_trocr
-        self.use_easyocr_fallback = use_easyocr_fallback
+        self.easyocr_reader = None
         self.trocr_processor = None
         self.trocr_model = None
-        self.easyocr_reader = None
         self._loaded = False
 
     def load_models(self):
-        """Lazy-load models to avoid slow startup"""
         if self._loaded:
             return
 
-        print("[OCR] Loading models... (first run downloads ~1GB, cached after)")
+        print("[OCR] Loading models...")
 
+        # Always load EasyOCR as primary
+        try:
+            import easyocr
+            print("[OCR] Loading EasyOCR (primary)...")
+            self.easyocr_reader = easyocr.Reader(['en'], gpu=False)
+            print("[OCR] EasyOCR loaded ✅")
+        except Exception as e:
+            print(f"[OCR] EasyOCR failed: {e}")
+
+        # Optionally load TrOCR for line-level refinement
         if self.use_trocr:
             try:
                 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
-                print("[OCR] Loading TrOCR handwriting model...")
+                print("[OCR] Loading TrOCR for line refinement...")
                 self.trocr_processor = TrOCRProcessor.from_pretrained(
-                    "microsoft/trocr-large-handwritten"  # large = better accuracy
+                    "microsoft/trocr-large-handwritten"
                 )
                 self.trocr_model = VisionEncoderDecoderModel.from_pretrained(
                     "microsoft/trocr-large-handwritten"
                 )
                 print("[OCR] TrOCR loaded ✅")
             except Exception as e:
-                print(f"[OCR] TrOCR failed to load: {e}. Falling back to EasyOCR.")
+                print(f"[OCR] TrOCR skipped: {e}")
                 self.use_trocr = False
-
-        if self.use_easyocr_fallback or not self.use_trocr:
-            try:
-                import easyocr
-                print("[OCR] Loading EasyOCR...")
-                self.easyocr_reader = easyocr.Reader(['en'], gpu=False)
-                print("[OCR] EasyOCR loaded ✅")
-            except Exception as e:
-                print(f"[OCR] EasyOCR failed: {e}")
 
         self._loaded = True
 
@@ -61,131 +60,120 @@ class HandwritingOCR:
         if img is None:
             raise ValueError(f"Cannot read image: {image_path}")
 
-        # Convert to grayscale
+        # Resize if too small — OCR needs decent resolution
+        h, w = img.shape[:2]
+        if w < 1000:
+            scale = 1000 / w
+            img = cv2.resize(img, (int(w * scale), int(h * scale)),
+                             interpolation=cv2.INTER_CUBIC)
+
+        # Grayscale
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         # Denoise
         denoised = cv2.fastNlMeansDenoising(gray, h=10)
 
-        # Adaptive thresholding - great for uneven lighting on handwritten papers
+        # Adaptive threshold — handles uneven lighting on handwritten papers
         thresh = cv2.adaptiveThreshold(
             denoised, 255,
             cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-            cv2.THRESH_BINARY, 11, 2
+            cv2.THRESH_BINARY, 21, 10
         )
 
-        # Deskew
-        coords = np.column_stack(np.where(thresh < 128))
-        if len(coords) > 0:
-            angle = cv2.minAreaRect(coords)[-1]
-            if angle < -45:
-                angle = -(90 + angle)
-            else:
-                angle = -angle
-            if abs(angle) < 10:  # Only correct small skews
-                (h, w) = thresh.shape
-                center = (w // 2, h // 2)
-                M = cv2.getRotationMatrix2D(center, angle, 1.0)
-                thresh = cv2.warpAffine(thresh, M, (w, h),
-                                        flags=cv2.INTER_CUBIC,
-                                        borderMode=cv2.BORDER_REPLICATE)
+        # Deskew if needed
+        thresh = self._deskew(thresh)
 
         return thresh
 
-    def split_into_regions(self, preprocessed_img: np.ndarray) -> list:
-        """
-        Split paper into question-answer regions.
-        Returns list of (region_image, y_position) tuples sorted by position.
-        """
-        # Find horizontal text lines using morphological operations
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (40, 1))
-        dilated = cv2.dilate(preprocessed_img, kernel, iterations=2)
-        inverted = cv2.bitwise_not(dilated)
-
-        # Find contours of text blocks
-        contours, _ = cv2.findContours(
-            inverted, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-        )
-
-        regions = []
-        h_total, w_total = preprocessed_img.shape
-
-        for cnt in contours:
-            x, y, w, h = cv2.boundingRect(cnt)
-            # Filter noise - only meaningful text blocks
-            if h > 15 and w > 50 and h < h_total * 0.4:
-                # Add padding
-                pad = 5
-                x1 = max(0, x - pad)
-                y1 = max(0, y - pad)
-                x2 = min(w_total, x + w + pad)
-                y2 = min(h_total, y + h + pad)
-                region = preprocessed_img[y1:y2, x1:x2]
-                regions.append((region, y1, x1))
-
-        # Sort by vertical position (top to bottom)
-        regions.sort(key=lambda r: r[1])
-        return regions
-
-    def trocr_recognize(self, pil_image: Image.Image) -> str:
-        """Run TrOCR on a PIL image"""
-        import torch
-        pixel_values = self.trocr_processor(
-            pil_image.convert("RGB"), return_tensors="pt"
-        ).pixel_values
-
-        with torch.no_grad():
-            generated_ids = self.trocr_model.generate(pixel_values)
-
-        text = self.trocr_processor.batch_decode(
-            generated_ids, skip_special_tokens=True
-        )[0]
-        return text.strip()
-
-    def easyocr_recognize(self, image_array: np.ndarray) -> str:
-        """Run EasyOCR on numpy array"""
-        results = self.easyocr_reader.readtext(image_array)
-        # Sort by position and join
-        results.sort(key=lambda r: r[0][0][1])  # sort by y coordinate
-        text = " ".join([r[1] for r in results])
-        return text.strip()
-
-    def recognize_full_page(self, image_path: str) -> str:
-        """OCR an entire page and return full text"""
-        self.load_models()
-
-        preprocessed = self.preprocess_image(image_path)
-
-        if self.use_trocr:
-            # TrOCR works best on smaller regions; process page in chunks
-            h, w = preprocessed.shape
-            chunk_height = 150  # pixels per chunk
-            chunks = []
-
-            for y in range(0, h, chunk_height):
-                chunk = preprocessed[y:y + chunk_height, 0:w]
-                if chunk.shape[0] < 20:
-                    continue
-                pil_chunk = Image.fromarray(chunk)
-                try:
-                    text = self.trocr_recognize(pil_chunk)
-                    if text:
-                        chunks.append(text)
-                except:
-                    pass
-
-            full_text = "\n".join(chunks)
-        elif self.easyocr_reader:
-            full_text = self.easyocr_recognize(preprocessed)
+    def _deskew(self, img: np.ndarray) -> np.ndarray:
+        """Correct slight rotation in scanned papers"""
+        coords = np.column_stack(np.where(img < 128))
+        if len(coords) < 100:
+            return img
+        angle = cv2.minAreaRect(coords)[-1]
+        if angle < -45:
+            angle = -(90 + angle)
         else:
-            raise RuntimeError("No OCR engine available!")
+            angle = -angle
+        if abs(angle) > 10:  # Don't correct large rotations — likely wrong
+            return img
+        h, w = img.shape
+        center = (w // 2, h // 2)
+        M = cv2.getRotationMatrix2D(center, angle, 1.0)
+        return cv2.warpAffine(img, M, (w, h),
+                              flags=cv2.INTER_CUBIC,
+                              borderMode=cv2.BORDER_REPLICATE)
 
-        return full_text
+    def _group_words_into_lines(self, ocr_results: list, y_tolerance: int = 15) -> list:
+        """
+        Group EasyOCR word detections into lines based on Y position.
+        Each result is: (bbox, text, confidence)
+        bbox is [[x1,y1],[x2,y1],[x2,y2],[x1,y2]]
+        Returns list of lines sorted top to bottom, words sorted left to right.
+        """
+        if not ocr_results:
+            return []
+
+        # Extract word info: (y_center, x_center, text, confidence)
+        words = []
+        for bbox, text, conf in ocr_results:
+            if conf < 0.1 or not text.strip():
+                continue
+            xs = [p[0] for p in bbox]
+            ys = [p[1] for p in bbox]
+            x_center = (min(xs) + max(xs)) / 2
+            y_center = (min(ys) + max(ys)) / 2
+            words.append((y_center, x_center, text.strip(), conf))
+
+        if not words:
+            return []
+
+        # Sort by Y position
+        words.sort(key=lambda w: w[0])
+
+        # Group into lines: words within y_tolerance of each other = same line
+        lines = []
+        current_line = [words[0]]
+
+        for word in words[1:]:
+            if abs(word[0] - current_line[-1][0]) <= y_tolerance:
+                current_line.append(word)
+            else:
+                lines.append(current_line)
+                current_line = [word]
+        lines.append(current_line)
+
+        # Sort each line left to right by X, join into string
+        sorted_lines = []
+        for line in lines:
+            line.sort(key=lambda w: w[1])
+            line_text = ' '.join(w[2] for w in line)
+            sorted_lines.append(line_text)
+
+        return sorted_lines
 
     def recognize_image(self, image_path: str) -> str:
-        """Main entry point - OCR an image file"""
+        """Main entry point — OCR an image and return structured text"""
         self.load_models()
         print(f"[OCR] Processing: {image_path}")
-        text = self.recognize_full_page(image_path)
-        print(f"[OCR] Extracted {len(text)} characters")
-        return text
+
+        # Preprocess
+        preprocessed = self.preprocess_image(image_path)
+
+        if self.easyocr_reader is None:
+            raise RuntimeError("No OCR engine available!")
+
+        # EasyOCR on preprocessed image
+        results = self.easyocr_reader.readtext(preprocessed)
+
+        if not results:
+            print("[OCR] Warning: No text detected in image")
+            return ""
+
+        # Group detections into proper lines
+        lines = self._group_words_into_lines(results, y_tolerance=20)
+
+        full_text = '\n'.join(lines)
+        print(f"[OCR] Extracted {len(lines)} lines, {len(full_text)} characters")
+
+        return full_text

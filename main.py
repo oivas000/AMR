@@ -64,6 +64,10 @@ def grade_from_image(image_path: str, answer_key: dict, student_id: str,
 
     # Step 3: Grade
     grader = PaperGrader(use_llm_feedback=use_llm, llama_server_url="http://localhost:8080")
+    result = grader.grade_paper(student_answers, answer_key, student_id)
+
+    # Step 4: Report
+    print_report(result)
 
     if save_output:
         output_dir = Path("outputs")
