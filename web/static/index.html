@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>AMR — Automatic Grader</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Base ───────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink:     #0a0a0f;
+  --paper:   #f5f2eb;
+  --cream:   #ede9de;
+  --amber:   #e8a020;
+  --amber2:  #f5c842;
+  --red:     #d63e2a;
+  --green:   #2a8c5a;
+  --blue:    #1e5fa8;
+  --muted:   #6b6760;
+  --rule:    #c8c3b8;
+  --shadow:  rgba(10,10,15,.12);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Mono', monospace;
+  background: var(--paper);
+  color: var(--ink);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── Grain overlay ──────────────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 9999;
+  opacity: .5;
+}
+
+/* ── Header ─────────────────────────────────────────────────────── */
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.5rem 3rem;
+  border-bottom: 1.5px solid var(--rule);
+  background: var(--paper);
+  position: sticky; top: 0; z-index: 100;
+}
+
+.logo {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800; font-size: 1.4rem; letter-spacing: -.03em;
+  display: flex; align-items: center; gap: .6rem;
+}
+.logo-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--amber);
+  display: inline-block;
+  box-shadow: 0 0 0 3px var(--amber2);
+  animation: pulse 2.5s ease infinite;
+}
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 0 3px var(--amber2); }
+  50%      { box-shadow: 0 0 0 6px transparent; }
+}
+.header-tag {
+  font-size: .7rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted); border: 1px solid var(--rule);
+  padding: .3rem .7rem; border-radius: 2px;
+}
+
+/* ── Layout ─────────────────────────────────────────────────────── */
+.container {
+  max-width: 1100px; margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+/* ── Hero ───────────────────────────────────────────────────────── */
+.hero {
+  margin-bottom: 4rem;
+  display: grid; grid-template-columns: 1fr auto;
+  align-items: end; gap: 2rem;
+}
+.hero h1 {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800; font-size: clamp(2.4rem, 5vw, 4rem);
+  line-height: .95; letter-spacing: -.04em;
+}
+.hero h1 span {
+  display: block; color: var(--amber);
+  -webkit-text-stroke: 0px;
+}
+.hero-sub {
+  font-size: .78rem; color: var(--muted);
+  letter-spacing: .06em; text-transform: uppercase;
+  max-width: 280px; line-height: 1.7;
+}
+.hero-num {
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: 7rem; color: var(--cream);
+  line-height: 1; letter-spacing: -.06em;
+  user-select: none;
+}
+
+/* ── Upload card ────────────────────────────────────────────────── */
+.card {
+  background: #fff;
+  border: 1.5px solid var(--rule);
+  border-radius: 4px;
+  box-shadow: 4px 4px 0 var(--rule);
+  overflow: hidden;
+}
+.card-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1.5px solid var(--rule);
+  background: var(--cream);
+  font-family: 'Syne', sans-serif;
+  font-weight: 700; font-size: .85rem;
+  letter-spacing: .08em; text-transform: uppercase;
+  display: flex; align-items: center; gap: .6rem;
+}
+.card-header .num {
+  background: var(--ink); color: var(--paper);
+  font-size: .7rem; padding: .2rem .5rem;
+  font-family: 'DM Mono', monospace;
+}
+.card-body { padding: 1.8rem; }
+
+/* ── Two-column form ────────────────────────────────────────────── */
+.form-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1.2rem; margin-bottom: 1.5rem;
+}
+@media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } }
+
+.field label {
+  display: block;
+  font-size: .7rem; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: .4rem;
+}
+.field input, .field select {
+  width: 100%; padding: .65rem .85rem;
+  border: 1.5px solid var(--rule);
+  background: var(--paper);
+  font-family: 'DM Mono', monospace; font-size: .82rem;
+  color: var(--ink);
+  border-radius: 2px;
+  transition: border-color .2s;
+  appearance: none;
+}
+.field input:focus, .field select:focus {
+  outline: none; border-color: var(--amber);
+}
+
+/* ── Drop zone ──────────────────────────────────────────────────── */
+.drop-zone {
+  border: 2px dashed var(--rule);
+  border-radius: 4px;
+  background: var(--cream);
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all .25s;
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--amber);
+  background: #fff8ec;
+}
+.drop-zone input[type=file] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer;
+}
+.drop-icon {
+  font-size: 2.5rem; margin-bottom: .8rem;
+  display: block; line-height: 1;
+}
+.drop-title {
+  font-family: 'Syne', sans-serif; font-weight: 700;
+  font-size: 1rem; margin-bottom: .3rem;
+}
+.drop-sub { font-size: .72rem; color: var(--muted); }
+.file-chosen {
+  margin-top: .8rem;
+  font-size: .78rem; color: var(--amber);
+  font-weight: 400;
+}
+
+/* ── Toggle row ─────────────────────────────────────────────────── */
+.toggle-row {
+  display: flex; align-items: center; gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: .9rem 1rem;
+  background: var(--cream);
+  border: 1.5px solid var(--rule);
+  border-radius: 2px;
+}
+.toggle-label {
+  font-size: .75rem; color: var(--muted);
+  letter-spacing: .05em;
+  flex: 1;
+}
+.toggle-label strong { color: var(--ink); }
+.switch {
+  position: relative; width: 44px; height: 24px; flex-shrink: 0;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; inset: 0;
+  background: var(--rule); border-radius: 24px;
+  cursor: pointer; transition: .3s;
+}
+.slider::before {
+  content: ''; position: absolute;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; top: 3px; left: 3px;
+  transition: .3s; box-shadow: 0 1px 3px var(--shadow);
+}
+.switch input:checked + .slider { background: var(--amber); }
+.switch input:checked + .slider::before { transform: translateX(20px); }
+
+/* ── Submit button ──────────────────────────────────────────────── */
+.btn-grade {
+  width: 100%; padding: 1rem;
+  background: var(--ink); color: var(--paper);
+  font-family: 'Syne', sans-serif;
+  font-weight: 700; font-size: .95rem;
+  letter-spacing: .08em; text-transform: uppercase;
+  border: none; border-radius: 2px;
+  cursor: pointer;
+  position: relative; overflow: hidden;
+  transition: transform .15s, box-shadow .15s;
+  box-shadow: 3px 3px 0 var(--amber);
+}
+.btn-grade:hover:not(:disabled) {
+  transform: translate(-1px,-1px);
+  box-shadow: 4px 4px 0 var(--amber);
+}
+.btn-grade:active:not(:disabled) {
+  transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--amber);
+}
+.btn-grade:disabled { opacity: .6; cursor: not-allowed; }
+.btn-grade .btn-inner {
+  display: flex; align-items: center; justify-content: center; gap: .7rem;
+}
+
+/* ── Spinner ────────────────────────────────────────────────────── */
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Progress steps ─────────────────────────────────────────────── */
+.progress-steps {
+  display: none; margin-top: 1.5rem;
+  padding: 1rem 1.2rem;
+  background: var(--cream);
+  border: 1.5px solid var(--rule);
+  border-radius: 2px;
+}
+.progress-steps.visible { display: block; }
+.step {
+  display: flex; align-items: center; gap: .7rem;
+  font-size: .75rem; padding: .35rem 0;
+  color: var(--muted); transition: color .3s;
+}
+.step.active { color: var(--ink); }
+.step.done   { color: var(--green); }
+.step.error  { color: var(--red); }
+.step-dot {
+  width: 8px; height: 8px; border-radius: 50; flex-shrink: 0;
+  background: var(--rule); transition: background .3s;
+}
+.step.active .step-dot { background: var(--amber); animation: pulse 1s infinite; }
+.step.done   .step-dot { background: var(--green); border-radius: 2px; }
+.step.error  .step-dot { background: var(--red); }
+
+/* ── Result panel ───────────────────────────────────────────────── */
+#result-panel {
+  margin-top: 2.5rem;
+  animation: fadeUp .5s ease forwards;
+  display: none;
+}
+#result-panel.visible { display: block; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Score hero ───────────────────────────────────── */
+.score-hero {
+  display: grid; grid-template-columns: auto 1fr;
+  gap: 2rem; align-items: center;
+  padding: 2rem 2rem 1.8rem;
+  border-bottom: 1.5px solid var(--rule);
+}
+.score-circle {
+  width: 120px; height: 120px; flex-shrink: 0;
+  border-radius: 50%;
+  border: 4px solid var(--rule);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: var(--paper);
+  position: relative;
+}
+.score-circle svg {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  transform: rotate(-90deg);
+}
+.score-circle .ring-bg { fill: none; stroke: var(--cream); stroke-width: 6; }
+.score-circle .ring-fg {
+  fill: none; stroke-width: 6; stroke-linecap: round;
+  stroke-dasharray: 283;
+  stroke-dashoffset: 283;
+  transition: stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1);
+}
+.score-pct {
+  font-family: 'Arial', sans-serif; font-weight: 800;
+  font-size: 1.3rem; line-height: 1; z-index: 1;
+}
+.score-lbl {
+  font-size: .6rem; color: var(--muted);
+  letter-spacing: .1em; text-transform: uppercase; z-index: 1;
+}
+.score-info { }
+.score-grade {
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: 3rem; line-height: 1;
+  letter-spacing: -.04em;
+}
+.score-marks {
+  font-size: .82rem; color: var(--muted);
+  margin: .3rem 0 .8rem;
+}
+.score-bar-wrap {
+  height: 6px; background: var(--cream);
+  border-radius: 3px; overflow: hidden;
+}
+.score-bar {
+  height: 100%; border-radius: 3px;
+  width: 0; transition: width 1.2s cubic-bezier(.4,0,.2,1);
+}
+
+/* OCR text box ─────────────────────────────────── */
+.ocr-box {
+  margin: 1.5rem;
+  border: 1.5px solid var(--rule);
+  border-radius: 2px; overflow: hidden;
+}
+.ocr-box-header {
+  padding: .6rem 1rem;
+  background: var(--cream);
+  border-bottom: 1px solid var(--rule);
+  font-size: .68rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.ocr-toggle {
+  background: none; border: none; cursor: pointer;
+  font-family: 'DM Mono', monospace; font-size: .68rem;
+  color: var(--amber); letter-spacing: .05em;
+}
+.ocr-content {
+  padding: .9rem 1rem;
+  font-size: .73rem; line-height: 1.7;
+  white-space: pre-wrap; color: var(--muted);
+  max-height: 140px; overflow-y: auto;
+  display: none;
+}
+.ocr-content.open { display: block; }
+
+/* Question cards ───────────────────────────────── */
+.q-list { padding: 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+
+.q-card {
+  border: 1.5px solid var(--rule);
+  border-radius: 3px; overflow: hidden;
+  transition: box-shadow .2s;
+}
+.q-card:hover { box-shadow: 3px 3px 0 var(--rule); }
+
+.q-card-head {
+  display: grid; grid-template-columns: auto 1fr auto auto;
+  align-items: center; gap: 1rem;
+  padding: .8rem 1.1rem;
+  background: var(--cream);
+  cursor: pointer; user-select: none;
+}
+.q-num {
+  font-family: 'Syne', sans-serif; font-weight: 800;
+  font-size: .9rem;
+  background: var(--ink); color: var(--paper);
+  padding: .2rem .55rem; border-radius: 2px;
+  min-width: 36px; text-align: center;
+}
+.q-preview {
+  font-size: .75rem; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.q-grade-badge {
+  font-family: 'Syne', sans-serif; font-weight: 700;
+  font-size: .8rem; padding: .2rem .6rem;
+  border-radius: 2px; min-width: 32px; text-align: center;
+}
+.q-marks-txt { font-size: .78rem; white-space: nowrap; }
+
+.q-card-body {
+  padding: 1.1rem;
+  border-top: 1.5px solid var(--rule);
+  display: none;
+}
+.q-card-body.open { display: block; }
+
+.answer-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1rem; margin-bottom: 1rem;
+}
+@media (max-width: 640px) { .answer-row { grid-template-columns: 1fr; } }
+
+.ans-box-lbl {
+  font-size: .65rem; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: .35rem;
+}
+.ans-box-text {
+  font-size: .78rem; line-height: 1.65;
+  padding: .7rem .9rem;
+  border: 1.5px solid var(--rule);
+  border-radius: 2px; background: var(--paper);
+  min-height: 60px;
+}
+.ans-box-text.student-ans { border-left: 3px solid var(--amber); }
+.ans-box-text.correct-ans { border-left: 3px solid var(--green); }
+
+.sim-row {
+  display: flex; align-items: center; gap: .8rem;
+  margin-bottom: .8rem; font-size: .73rem;
+}
+.sim-bar-wrap {
+  flex: 1; height: 5px; background: var(--cream);
+  border-radius: 3px; overflow: hidden;
+}
+.sim-bar { height: 100%; border-radius: 3px; }
+.feedback-box {
+  font-size: .78rem; line-height: 1.65;
+  padding: .7rem .9rem;
+  background: #f9f7f2;
+  border: 1.5px solid var(--rule);
+  border-left: 3px solid var(--blue);
+  border-radius: 2px; color: var(--muted);
+}
+.feedback-box::before {
+  content: '💬 Feedback  ';
+  font-size: .65rem; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--blue);
+  font-weight: 600;
+}
+
+/* chevron ──────────────────────────────────────── */
+.chevron {
+  font-size: .7rem; color: var(--muted);
+  transition: transform .25s;
+}
+.q-card.expanded .chevron { transform: rotate(180deg); }
+
+/* grade colors ─────────────────────────────────── */
+.grade-Aplus  { background:#dcf5e9; color:var(--green); }
+.grade-A      { background:#dcf5e9; color:var(--green); }
+.grade-B      { background:#e8f0fc; color:var(--blue); }
+.grade-C      { background:#fff8dc; color:#b87c00; }
+.grade-D      { background:#fff0dc; color:#c06000; }
+.grade-F      { background:#fde8e5; color:var(--red); }
+
+.bar-Aplus, .bar-A  { background: var(--green); }
+.bar-B              { background: var(--blue); }
+.bar-C              { background: #d4a017; }
+.bar-D              { background: #d07020; }
+.bar-F              { background: var(--red); }
+
+/* error box ────────────────────────────────────── */
+.error-box {
+  display: none; margin-top: 1.5rem;
+  padding: 1rem 1.2rem;
+  background: #fde8e5;
+  border: 1.5px solid var(--red);
+  border-radius: 2px;
+  font-size: .8rem; line-height: 1.6; color: var(--red);
+}
+.error-box.visible { display: block; }
+
+/* footer ───────────────────────────────────────── */
+footer {
+  margin-top: 5rem; padding: 1.5rem 3rem;
+  border-top: 1.5px solid var(--rule);
+  font-size: .68rem; color: var(--muted);
+  letter-spacing: .05em;
+  display: flex; justify-content: space-between; align-items: center;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-dot"></span>
+    AMR
+  </div>
+  <span class="header-tag">Handwriting Evaluator</span>
+</header>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div>
+      <p style="font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:.7rem;">
+        AI-Powered · Offline · Semantic Grading
+      </p>
+      <h1>Grade papers.<br><span>Instantly.</span></h1>
+      <p class="hero-sub" style="margin-top:1rem;">
+        Upload a scanned answer sheet, pick an answer key, and get detailed marks in seconds.
+      </p>
+    </div>
+    <div class="hero-num" aria-hidden="true">01</div>
+  </div>
+
+  <!-- Upload card -->
+  <div class="card">
+    <div class="card-header">
+      <span class="num">STEP 01</span>
+      Upload Answer Sheet &amp; Configure
+    </div>
+    <div class="card-body">
+
+      <!-- Drop zone -->
+      <div class="drop-zone" id="dropZone">
+        <input type="file" id="fileInput" accept="image/*,.txt">
+        <span class="drop-icon">📄</span>
+        <div class="drop-title">Drop answer sheet here</div>
+        <div class="drop-sub">JPG / PNG / PDF image or .txt · Click or drag &amp; drop</div>
+        <div class="file-chosen" id="fileChosen"></div>
+      </div>
+
+      <!-- Form fields -->
+      <div class="form-grid">
+        <div class="field">
+          <label>Answer Key</label>
+          <select id="keySelect">
+            <option value="">Loading keys…</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Student ID / Name</label>
+          <input type="text" id="studentId" placeholder="e.g. Roll_101" value="Student_01">
+        </div>
+      </div>
+
+      <!-- LLM toggle -->
+      <div class="toggle-row">
+        <div class="toggle-label">
+          <strong>LLM Feedback</strong> — Requires llama-server running on port 8080<br>
+          <span style="font-size:.67rem;">./llama-server -m Qwen2.5-7B-Instruct-Q4_K_M.gguf --port 8080</span>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="llmToggle">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <!-- Submit -->
+      <button class="btn-grade" id="gradeBtn" onclick="submitGrade()">
+        <span class="btn-inner" id="btnInner">
+          <span>Evaluate Paper</span>
+          <span>→</span>
+        </span>
+      </button>
+
+      <!-- Error -->
+      <div class="error-box" id="errorBox"></div>
+
+      <!-- Progress -->
+      <div class="progress-steps" id="progressSteps">
+        <div class="step" id="step1"><div class="step-dot"></div>Preprocessing image</div>
+        <div class="step" id="step2"><div class="step-dot"></div>Running OCR (EasyOCR + TrOCR)</div>
+        <div class="step" id="step3"><div class="step-dot"></div>Parsing question–answer mapping</div>
+        <div class="step" id="step4"><div class="step-dot"></div>Semantic similarity grading</div>
+        <div class="step" id="step5"><div class="step-dot"></div>Generating feedback</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Result panel -->
+  <div id="result-panel">
+    <div class="card" style="margin-top:2.5rem;">
+      <div class="card-header">
+        <span class="num">RESULT</span>
+        <span id="resultStudentLabel">Student Report</span>
+      </div>
+
+      <!-- Score hero -->
+      <div class="score-hero">
+        <div class="score-circle">
+          <svg viewBox="0 0 100 100">
+            <circle class="ring-bg" cx="50" cy="50" r="45"/>
+            <circle class="ring-fg" id="ringFg" cx="50" cy="50" r="45"/>
+          </svg>
+          <div class="score-pct" id="scorePct">—</div>
+          <div class="score-lbl">Score</div>
+        </div>
+        <div class="score-info">
+          <div class="score-grade" id="scoreGrade">—</div>
+          <div class="score-marks" id="scoreMarks">— / — marks</div>
+          <div class="score-bar-wrap">
+            <div class="score-bar" id="scoreBar"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OCR text -->
+      <div class="ocr-box">
+        <div class="ocr-box-header">
+          <span>Extracted OCR Text</span>
+          <button class="ocr-toggle" onclick="toggleOCR()">Show ▾</button>
+        </div>
+        <pre class="ocr-content" id="ocrContent"></pre>
+      </div>
+
+      <!-- Question list -->
+      <div class="q-list" id="qList"></div>
+
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <span>AMR — local AI paper grader</span>
+  <span>TrOCR · SentenceTransformers · Qwen / llama-server</span>
+</footer>
+
+<script>
+// ── Load answer keys ──────────────────────────────────────────────
+async function loadKeys() {
+  try {
+    const r = await fetch('/api/answer-keys');
+    const d = await r.json();
+    const sel = document.getElementById('keySelect');
+    sel.innerHTML = '';
+    if (!d.keys.length) {
+      sel.innerHTML = '<option value="">No answer keys found</option>';
+      return;
+    }
+    d.keys.forEach(k => {
+      const o = document.createElement('option');
+      o.value = o.textContent = k;
+      sel.appendChild(o);
+    });
+  } catch(e) {
+    document.getElementById('keySelect').innerHTML =
+      '<option value="">Error loading keys</option>';
+  }
+}
+loadKeys();
+
+// ── File drag & drop ──────────────────────────────────────────────
+const dz = document.getElementById('dropZone');
+const fi = document.getElementById('fileInput');
+
+fi.addEventListener('change', () => updateFileLabel());
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) {
+    fi.files = e.dataTransfer.files;
+    updateFileLabel();
+  }
+});
+
+function updateFileLabel() {
+  const f = fi.files[0];
+  document.getElementById('fileChosen').textContent = f ? `✓  ${f.name}  (${(f.size/1024).toFixed(1)} KB)` : '';
+  document.querySelector('.drop-icon').textContent = f ? '✅' : '📄';
+}
+
+// ── Progress helper ───────────────────────────────────────────────
+let stepTimer = null;
+function startProgress() {
+  document.getElementById('progressSteps').classList.add('visible');
+  const steps = ['step1','step2','step3','step4','step5'];
+  let i = 0;
+  clearInterval(stepTimer);
+  steps.forEach(id => {
+    const el = document.getElementById(id);
+    el.className = 'step'; // reset
+  });
+  function advance() {
+    if (i > 0) document.getElementById(steps[i-1]).className = 'step done';
+    if (i < steps.length) {
+      document.getElementById(steps[i]).className = 'step active';
+      i++;
+      // Each step takes a varying time (OCR is slowest)
+      const delays = [800, 3000, 600, 1200, 600];
+      stepTimer = setTimeout(advance, delays[i-1] || 800);
+    }
+  }
+  advance();
+}
+function doneProgress(success) {
+  clearInterval(stepTimer);
+  const steps = ['step1','step2','step3','step4','step5'];
+  steps.forEach(id => {
+    const el = document.getElementById(id);
+    if (el.classList.contains('active') || el.classList.contains('done'))
+      el.className = success ? 'step done' : 'step error';
+  });
+}
+
+// ── Grade submission ──────────────────────────────────────────────
+async function submitGrade() {
+  const file = fi.files[0];
+  const key  = document.getElementById('keySelect').value;
+  const sid  = document.getElementById('studentId').value.trim() || 'Student';
+  const llm  = document.getElementById('llmToggle').checked;
+
+  const errBox = document.getElementById('errorBox');
+  errBox.classList.remove('visible');
+
+  if (!file) { showError('Please upload an answer sheet first.'); return; }
+  if (!key)  { showError('Please select an answer key.'); return; }
+
+  const btn = document.getElementById('gradeBtn');
+  btn.disabled = true;
+  document.getElementById('btnInner').innerHTML =
+    '<div class="spinner"></div><span>Evaluating…</span>';
+  document.getElementById('result-panel').classList.remove('visible');
+  startProgress();
+
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('answer_key', key);
+  formData.append('student_id', sid);
+  formData.append('use_llm', llm);
+  formData.append('input_type', file.name.endsWith('.txt') ? 'text' : 'image');
+
+  try {
+    const resp = await fetch('/api/grade', { method: 'POST', body: formData });
+    const data = await resp.json();
+
+    if (!resp.ok || data.error) {
+      doneProgress(false);
+      showError((data.error || 'Server error') +
+        (data.raw_text ? `\n\nExtracted text:\n${data.raw_text}` : ''));
+      return;
+    }
+
+    doneProgress(true);
+    renderResult(data);
+  } catch(e) {
+    doneProgress(false);
+    showError('Connection error — is the server running?\n\nuvicorn app:app --port 7860');
+  } finally {
+    btn.disabled = false;
+    document.getElementById('btnInner').innerHTML =
+      '<span>Evaluate Paper</span><span>→</span>';
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorBox');
+  el.textContent = msg; el.classList.add('visible');
+}
+
+// ── Render result ─────────────────────────────────────────────────
+function renderResult(data) {
+  // Header
+  document.getElementById('resultStudentLabel').textContent =
+    `${data.student_id} — ${new Date().toLocaleDateString()}`;
+
+  // Score circle
+  const pct = data.percentage;
+  const gc  = gradeClass(data.grade);
+  document.getElementById('scorePct').textContent = pct.toFixed(1) + '%';
+  document.getElementById('scoreGrade').textContent = data.grade;
+  document.getElementById('scoreGrade').className = `score-grade grade-${gc}`;
+  document.getElementById('scoreMarks').textContent =
+    `${data.total_marks.toFixed(1)} / ${data.max_marks.toFixed(1)} marks`;
+
+  // Animate ring
+  const ring = document.getElementById('ringFg');
+  const circumference = 283;
+  ring.style.strokeDashoffset = circumference;
+  ring.className.baseVal = `ring-fg bar-${gc}`;
+  setTimeout(() => {
+    ring.style.strokeDashoffset = circumference - (pct / 100) * circumference;
+  }, 100);
+
+  // Score bar
+  const bar = document.getElementById('scoreBar');
+  bar.style.width = '0';
+  bar.className = `score-bar bar-${gc}`;
+  setTimeout(() => { bar.style.width = pct + '%'; }, 100);
+
+  // OCR text
+  document.getElementById('ocrContent').textContent = data.raw_text || '—';
+
+  // Questions
+  const list = document.getElementById('qList');
+  list.innerHTML = '';
+  (data.questions || []).forEach(q => renderQuestion(list, q));
+
+  // Show panel
+  const panel = document.getElementById('result-panel');
+  panel.classList.add('visible');
+  panel.style.display = 'block';
+  setTimeout(() => panel.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
+}
+
+function renderQuestion(container, q) {
+  const gc = gradeClass(q.grade);
+  const simPct = (q.similarity * 100).toFixed(0);
+  const marksPct = q.max_marks > 0 ? (q.marks / q.max_marks * 100).toFixed(0) : 0;
+  const isNotAnswered = q.student === '[NOT ANSWERED]';
+
+  const card = document.createElement('div');
+  card.className = 'q-card';
+  card.innerHTML = `
+    <div class="q-card-head" onclick="toggleQ(this.parentElement)">
+      <div class="q-num">Q${q.id}</div>
+      <div class="q-preview">${isNotAnswered ? '(not attempted)' : escHtml(q.student).substring(0,60)+'…'}</div>
+      <div class="q-grade-badge grade-${gc}">${q.grade}</div>
+      <div class="q-marks-txt">${q.marks.toFixed(1)}/${q.max_marks}</div>
+      <div class="chevron">▾</div>
+    </div>
+    <div class="q-card-body">
+      <div class="answer-row">
+        <div>
+          <div class="ans-box-lbl">Student's Answer</div>
+          <div class="ans-box-text student-ans">${isNotAnswered ? '<em style="color:var(--red)">Not attempted</em>' : escHtml(q.student)}</div>
+        </div>
+        <div>
+          <div class="ans-box-lbl">Correct Answer</div>
+          <div class="ans-box-text correct-ans">${escHtml(q.correct)}</div>
+        </div>
+      </div>
+      <div class="sim-row">
+        <span style="font-size:.68rem;color:var(--muted);white-space:nowrap;">Similarity ${simPct}%</span>
+        <div class="sim-bar-wrap"><div class="sim-bar bar-${gc}" style="width:${simPct}%"></div></div>
+        <span style="font-size:.68rem;color:var(--muted);white-space:nowrap;">Marks ${marksPct}%</span>
+      </div>
+      <div class="feedback-box">${escHtml(q.feedback)}</div>
+    </div>
+  `;
+  container.appendChild(card);
+}
+
+function toggleQ(card) {
+  const body = card.querySelector('.q-card-body');
+  const open = body.classList.toggle('open');
+  card.classList.toggle('expanded', open);
+}
+
+function toggleOCR() {
+  const c = document.getElementById('ocrContent');
+  const open = c.classList.toggle('open');
+  document.querySelector('.ocr-toggle').textContent = open ? 'Hide ▴' : 'Show ▾';
+}
+
+function gradeClass(g) {
+  return { 'A+':'Aplus','A':'A','B':'B','C':'C','D':'D','F':'F' }[g] || 'F';
+}
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
