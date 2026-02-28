@@ -1,0 +1,18 @@
+Student Name: John Doe
+Roll No: 101
+Subject: Science
+Date: 2024-01-15
+
+1. Photosynthesis is when plants make food from sunlight and CO2. They produce oxygen and sugar using chlorophyll in their leaves.
+
+2. Newton's first law says that objects in motion tend to stay in motion and objects at rest stay at rest. This is because of inertia. A force is needed to change the state of motion.
+
+3. Mitochondria produces energy for the cell. It creates ATP through respiration where oxygen and glucose are converted to energy.
+
+3a. ATP means Adenosine Triphosphate which stores energy in cells.
+
+3b. Respiration happens in mitochondria of the cell.
+
+4. Osmosis is the diffusion of water through a semi-permeable membrane from lower concentration to higher concentration region.
+
+5. The water cycle has four steps - evaporation where water turns to vapor, condensation where vapor forms clouds, precipitation where rain falls, and collection where water goes back to rivers and oceans.

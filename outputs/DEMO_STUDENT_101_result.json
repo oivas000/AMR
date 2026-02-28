@@ -1,0 +1,73 @@
+{
+  "student_id": "DEMO_STUDENT_101",
+  "timestamp": "2026-02-28T11:34:24.105971",
+  "total_marks": 48.0,
+  "max_marks": 48,
+  "percentage": 100.0,
+  "grade": "A+",
+  "questions": {
+    "1": {
+      "student_answer": "Photosynthesis is when plants make food from sunlight and CO2. They produce oxygen and sugar using chlorophyll in their leaves.",
+      "correct_answer": "Photosynthesis is the process by which green plants use sunlight, water and carbon dioxide to produce glucose and oxygen.",
+      "marks_awarded": 5.0,
+      "max_marks": 5,
+      "similarity_score": 0.951,
+      "grade": "A+",
+      "feedback": "Excellent answer! Very well covered."
+    },
+    "2": {
+      "student_answer": "Newton's first law says that objects in motion tend to stay in motion and objects at rest stay at rest. This is because of inertia. A force is needed to change the state of motion.",
+      "correct_answer": "Newton's first law of motion states that an object at rest stays at rest and an object in motion stays in motion with the same speed and in the same direction unless acted upon by an unbalanced external force.",
+      "marks_awarded": 10.0,
+      "max_marks": 10,
+      "similarity_score": 0.954,
+      "grade": "A+",
+      "feedback": "Excellent answer! Very well covered."
+    },
+    "3": {
+      "student_answer": "Mitochondria produces energy for the cell. It creates ATP through respiration where oxygen and glucose are converted to energy.",
+      "correct_answer": "The mitochondria is the powerhouse of the cell. It produces ATP through cellular respiration, converting glucose and oxygen into energy.",
+      "marks_awarded": 8.0,
+      "max_marks": 8,
+      "similarity_score": 0.984,
+      "grade": "A+",
+      "feedback": "Excellent answer! Very well covered."
+    },
+    "3a": {
+      "student_answer": "ATP means Adenosine Triphosphate which stores energy in cells.",
+      "correct_answer": "ATP stands for Adenosine Triphosphate.",
+      "marks_awarded": 2.0,
+      "max_marks": 2,
+      "similarity_score": 0.861,
+      "grade": "A+",
+      "feedback": "Excellent answer! Very well covered."
+    },
+    "3b": {
+      "student_answer": "Respiration happens in mitochondria of the cell.",
+      "correct_answer": "Cellular respiration occurs in the mitochondria and cytoplasm.",
+      "marks_awarded": 3.0,
+      "max_marks": 3,
+      "similarity_score": 0.947,
+      "grade": "A+",
+      "feedback": "Excellent answer! Very well covered."
+    },
+    "4": {
+      "student_answer": "Osmosis is the diffusion of water through a semi-permeable membrane from lower concentration to higher concentration region.",
+      "correct_answer": "Osmosis is the movement of water molecules through a semipermeable membrane from a region of low solute concentration to a region of high solute concentration.",
+      "marks_awarded": 10.0,
+      "max_marks": 10,
+      "similarity_score": 0.983,
+      "grade": "A+",
+      "feedback": "Excellent answer! Very well covered."
+    },
+    "5": {
+      "student_answer": "The water cycle has four steps - evaporation where water turns to vapor, condensation where vapor forms clouds, precipitation where rain falls, and collection where water goes back to rivers and oceans.",
+      "correct_answer": "The water cycle involves evaporation, condensation, precipitation and collection. Water evaporates from oceans and lakes, forms clouds, falls as rain or snow, and flows back to oceans through rivers.",
+      "marks_awarded": 10.0,
+      "max_marks": 10,
+      "similarity_score": 1.0,
+      "grade": "A+",
+      "feedback": "Excellent answer! Very well covered."
+    }
+  }
+}
