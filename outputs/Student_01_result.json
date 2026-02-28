@@ -1,10 +1,10 @@
 {
   "student_id": "Student_01",
-  "timestamp": "2026-02-28T12:11:55.063951",
-  "total_marks": 2.7,
+  "timestamp": "2026-02-28T13:11:03.976485",
+  "total_marks": 11.6,
   "max_marks": 20,
-  "percentage": 13.5,
-  "grade": "F",
+  "percentage": 58.0,
+  "grade": "D",
   "questions": {
     "1": {
       "student_answer": "[NOT ANSWERED]",
@@ -16,22 +16,22 @@
       "feedback": "Question not attempted."
     },
     "2": {
-      "student_answer": "| PH OTosy NTHLESIS 1S A1W_PLBNIS Mak Foop -Thyy ~Sunlightt Ond Cax bon diox= ido_ Ovnd Waken ~o_bhduc Ond ~Oxygon #hneugh_chlacphy L %hcaa Jeaes",
+      "student_answer": "People's straight and carbon dioxide and water to and oxygen through chlorophyllleancs .",
       "correct_answer": "Photosynthesis is the process by which plants convert sunlight, water and carbon dioxide into glucose and oxygen using chlorophyll.",
-      "marks_awarded": 2.0,
+      "marks_awarded": 7.7,
       "max_marks": 10,
-      "similarity_score": 0.253,
-      "grade": "F",
-      "feedback": "Answer needs significant improvement. Please revisit this topic."
+      "similarity_score": 0.679,
+      "grade": "B",
+      "feedback": ""
     },
     "3": {
-      "student_answer": "! The #hnee stakes _ ~of malber Lsolid _ liquid_= C dga PARIS 1S_CAPILALL 0F ERaNCe-_II Hes_ ON SCne Rivep",
+      "student_answer": "The three states of matter solid , liquid and gas Paris is capital of France . It has join seeing river .",
       "correct_answer": "The three states of matter are solid, liquid and gas. In solids particles are tightly packed, in liquids they flow freely, and in gases they are spread far apart.",
-      "marks_awarded": 0.7,
+      "marks_awarded": 3.9,
       "max_marks": 5,
-      "similarity_score": 0.181,
-      "grade": "F",
-      "feedback": "Answer needs significant improvement. Please revisit this topic."
+      "similarity_score": 0.684,
+      "grade": "B",
+      "feedback": ""
     }
   }
 }

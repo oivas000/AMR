@@ -1,24 +1,64 @@
-"1":
-  answer: "The capital of France is Paris. It is located in northern France along the Seine river and has been the country's capital since the 10th century."
-  marks: 5
-  keywords:
-    - Paris
-    - France
+# Answer Key Format
+# Save this file as: answer_keys/your_subject.yaml
+#
+# Format:
+# question_id:
+#   answer: "The correct answer text"
+#   marks: 10         # max marks for this question
+#   keywords:         # optional - key words that must appear
+#     - keyword1
+#     - keyword2
 
-"2":
-  answer: "Photosynthesis is the process by which plants convert sunlight, water and carbon dioxide into glucose and oxygen using chlorophyll."
-  marks: 10
+# Example: Science Paper
+
+"1":
+  answer: "Photosynthesis is the process by which green plants use sunlight, water and carbon dioxide to produce glucose and oxygen."
+  marks: 5
   keywords:
     - sunlight
-    - chlorophyll
+    - carbon dioxide
     - glucose
     - oxygen
-    - carbon dioxide
+
+"2":
+  answer: "Newton's first law of motion states that an object at rest stays at rest and an object in motion stays in motion with the same speed and in the same direction unless acted upon by an unbalanced external force."
+  marks: 10
+  keywords:
+    - rest
+    - motion
+    - force
+    - inertia
 
 "3":
-  answer: "The three states of matter are solid, liquid and gas. In solids particles are tightly packed, in liquids they flow freely, and in gases they are spread far apart."
-  marks: 5
+  answer: "The mitochondria is the powerhouse of the cell. It produces ATP through cellular respiration, converting glucose and oxygen into energy."
+  marks: 8
   keywords:
-    - solid
-    - liquid
-    - gas
+    - mitochondria
+    - ATP
+    - cellular respiration
+    - energy
+
+"3a":
+  answer: "ATP stands for Adenosine Triphosphate."
+  marks: 2
+
+"3b":
+  answer: "Cellular respiration occurs in the mitochondria and cytoplasm."
+  marks: 3
+
+"4":
+  answer: "Osmosis is the movement of water molecules through a semipermeable membrane from a region of low solute concentration to a region of high solute concentration."
+  marks: 10
+  keywords:
+    - water
+    - semipermeable
+    - concentration
+    - membrane
+
+"5":
+  answer: "The water cycle involves evaporation, condensation, precipitation and collection. Water evaporates from oceans and lakes, forms clouds, falls as rain or snow, and flows back to oceans through rivers."
+  marks: 10
+  keywords:
+    - evaporation
+    - condensation
+    - precipitation

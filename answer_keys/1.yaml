@@ -1,0 +1,24 @@
+"1":
+  answer: "The capital of France is Paris. It is located in northern France along the Seine river and has been the country's capital since the 10th century."
+  marks: 5
+  keywords:
+    - Paris
+    - France
+
+"2":
+  answer: "Photosynthesis is the process by which plants convert sunlight, water and carbon dioxide into glucose and oxygen using chlorophyll."
+  marks: 10
+  keywords:
+    - sunlight
+    - chlorophyll
+    - glucose
+    - oxygen
+    - carbon dioxide
+
+"3":
+  answer: "The three states of matter are solid, liquid and gas. In solids particles are tightly packed, in liquids they flow freely, and in gases they are spread far apart."
+  marks: 5
+  keywords:
+    - solid
+    - liquid
+    - gas
